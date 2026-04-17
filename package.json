@@ -13,10 +13,21 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
+  "files": ["dist"],
   "keywords": ["shopify", "mcp", "model-context-protocol", "claude-desktop"],
   "license": "MIT",
+  "author": "Guillaume Picard",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gwpicard/shopify-mcp-complete.git"
+  },
+  "homepage": "https://github.com/gwpicard/shopify-mcp-complete",
+  "bugs": {
+    "url": "https://github.com/gwpicard/shopify-mcp-complete/issues"
+  },
   "engines": {
     "node": ">=18.0.0"
   },

@@ -19,8 +19,7 @@ Most Shopify MCP servers expose 70+ tools. That hurts tool-selection accuracy an
 ### 1. Install
 
 ```bash
-npm install
-npm run build
+npm install -g shopify-mcp-server
 ```
 
 ### 2. Add to Claude Desktop
@@ -31,8 +30,8 @@ Add to `claude_desktop_config.json`:
 {
   "mcpServers": {
     "shopify": {
-      "command": "node",
-      "args": ["/path/to/shopify-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["shopify-mcp-server"],
       "env": {
         "SHOPIFY_STORE_DOMAIN": "your-store.myshopify.com",
         "SHOPIFY_ACCESS_TOKEN": "shpat_xxxxx"
@@ -43,6 +42,35 @@ Add to `claude_desktop_config.json`:
 ```
 
 All credentials are passed via the `env` block in your MCP client config. No `.env` file needed.
+
+<details>
+<summary>Local development</summary>
+
+If you're working on the server itself, clone the repo and point to the built output:
+
+```bash
+git clone https://github.com/gwpicard/shopify-mcp-complete.git
+cd shopify-mcp-complete
+npm install
+npm run build
+```
+
+```json
+{
+  "mcpServers": {
+    "shopify": {
+      "command": "node",
+      "args": ["/path/to/shopify-mcp-complete/dist/index.js"],
+      "env": {
+        "SHOPIFY_STORE_DOMAIN": "your-store.myshopify.com",
+        "SHOPIFY_ACCESS_TOKEN": "shpat_xxxxx"
+      }
+    }
+  }
+}
+```
+
+</details>
 
 ## Authentication
 
