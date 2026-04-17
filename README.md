@@ -1,12 +1,12 @@
 # Shopify MCP Server
 
-A Shopify MCP server for Claude Desktop. 32 tools across 9 domains, built around a pull → audit → update workflow.
+A Shopify MCP server for Claude Desktop. 33 tools across 9 domains, built around a pull → audit → update workflow.
 
 ### Design notes
 
 Most Shopify MCP servers expose 70+ tools. That hurts tool-selection accuracy and eats context. This one keeps the surface area smaller and opinionated.
 
-- **32 tools total.** A smaller menu makes tool selection more consistent and cheaper in tokens.
+- **33 tools total.** A smaller menu makes tool selection more consistent and cheaper in tokens.
 - **Atomic `productSet` mutations.** One code path covers create and update, matching Shopify's recommended pattern, rather than separate `productCreate` / `productUpdate` paths.
 - **Cost-aware rate limiting.** Tracks `extensions.cost.throttleStatus` and sleeps before the budget runs out, so requests don't trip a 429.
 - **Tool annotations on every tool.** Claude Desktop auto-approves read-only calls without user confirmation.
@@ -117,7 +117,7 @@ You need an app on the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard
 | `SHOPIFY_ACCESS_TOKEN` | Yes | The `shpat_` token from step 9 above |
 | `SHOPIFY_API_VERSION` | No | Defaults to `2026-04` |
 
-## Tools (32)
+## Tools (33)
 
 ### Products (9)
 
@@ -133,12 +133,13 @@ You need an app on the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard
 | `manage_product_media` | W | Add/delete product media |
 | `manage_product_variants` | W | Bulk create/update/delete variants |
 
-### Bulk Operations (3)
+### Bulk Operations (4)
 
 | Tool | R/W | Description |
 |------|-----|-------------|
 | `bulk_export_products` | R | Kick off 2 sequential bulk queries for full product data |
 | `get_bulk_operation_status` | R | Poll operation status and get download URL |
+| `get_bulk_operation_results` | R | Download and parse completed bulk operation JSONL results inline |
 | `bulk_update_products` | W | JSONL upload + bulk `productSet` mutation |
 
 ### Metafields (4)

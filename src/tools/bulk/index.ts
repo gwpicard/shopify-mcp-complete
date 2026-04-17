@@ -103,6 +103,106 @@ const tools: ToolDefinition[] = [
     },
   },
   {
+    name: "get_bulk_operation_results",
+    description:
+      "Download and parse the results of a completed bulk operation. Fetches the JSONL file from the bulk operation's URL and returns structured data inline, reconstructing parent-child relationships. Use this instead of manually downloading the URL, especially in sandboxed environments.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: {
+          type: "string",
+          description:
+            "Shopify bulk operation GID (e.g. gid://shopify/BulkOperation/123)",
+        },
+        limit: {
+          type: "number",
+          description:
+            "Max number of root objects to return (optional, for large catalogs)",
+        },
+      },
+      required: ["id"],
+    },
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    },
+    handler: async (client, args) => {
+      const result = await client.query<{ node: any }>(
+        GET_BULK_OPERATION_QUERY,
+        { id: args.id }
+      );
+      const error = extractGraphQLErrors(result);
+      if (error) return formatErrorResponse(error);
+      if (!result.data?.node)
+        return formatErrorResponse("Bulk operation not found");
+
+      const node = result.data.node;
+
+      if (node.status !== "COMPLETED") {
+        return formatSuccess({
+          status: node.status,
+          message: `Operation is ${node.status}. Poll again later.`,
+          objectCount: node.objectCount,
+        });
+      }
+
+      if (!node.url) {
+        return formatSuccess({
+          status: "COMPLETED",
+          message: "Operation completed with no results.",
+          objectCount: "0",
+        });
+      }
+
+      let text: string;
+      try {
+        const response = await fetch(node.url);
+        if (!response.ok) {
+          return formatErrorResponse(
+            `Failed to download results: ${response.status} ${response.statusText}`
+          );
+        }
+        text = await response.text();
+      } catch (err: any) {
+        return formatErrorResponse(
+          `Failed to fetch results: ${err.message}`
+        );
+      }
+
+      const lines = text.trim().split("\n").filter(Boolean);
+      const objectMap = new Map<string, any>();
+      const roots: any[] = [];
+
+      for (const line of lines) {
+        const obj = JSON.parse(line);
+        if (obj.id) {
+          obj._children = [];
+          objectMap.set(obj.id, obj);
+        }
+        if (obj.__parentId) {
+          const parent = objectMap.get(obj.__parentId);
+          if (parent) {
+            parent._children.push(obj);
+          }
+        } else {
+          roots.push(obj);
+        }
+      }
+
+      const limit = args.limit as number | undefined;
+      const data = limit ? roots.slice(0, limit) : roots;
+
+      return formatSuccess({
+        status: "COMPLETED",
+        objectCount: node.objectCount,
+        rootObjectCount: roots.length,
+        data,
+      });
+    },
+  },
+  {
     name: "bulk_update_products",
     description:
       "Run a bulk mutation to update products using a JSONL file. Creates a staged upload, then runs the bulkOperationRunMutation with the productSet mutation. The JSONL file should contain one ProductSetInput JSON object per line.",

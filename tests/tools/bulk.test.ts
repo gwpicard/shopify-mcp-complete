@@ -58,6 +58,66 @@ describe("bulk operations", () => {
     });
   });
 
+  describe("get_bulk_operation_results", () => {
+    it("returns status when operation is still running", async () => {
+      mockClient.query.mockResolvedValue({
+        data: { node: { id: "op1", status: "RUNNING", objectCount: "50", url: null } },
+      });
+      const result = await findTool("get_bulk_operation_results").handler(mockClient, { id: "op1" });
+      const data = JSON.parse(result.content[0].text);
+      expect(data.status).toBe("RUNNING");
+      expect(data.message).toContain("RUNNING");
+    });
+
+    it("fetches JSONL and reconstructs parent-child relationships", async () => {
+      mockClient.query.mockResolvedValue({
+        data: {
+          node: { id: "op1", status: "COMPLETED", objectCount: "3", url: "https://storage.shopify.com/file.jsonl" },
+        },
+      });
+      const jsonl = [
+        '{"id":"gid://shopify/Product/1","title":"Shirt"}',
+        '{"id":"gid://shopify/ProductVariant/10","title":"Small","__parentId":"gid://shopify/Product/1"}',
+        '{"id":"gid://shopify/Product/2","title":"Hat"}',
+      ].join("\n");
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true, text: () => Promise.resolve(jsonl) });
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await findTool("get_bulk_operation_results").handler(mockClient, { id: "op1" });
+      const data = JSON.parse(result.content[0].text);
+      expect(data.status).toBe("COMPLETED");
+      expect(data.rootObjectCount).toBe(2);
+      expect(data.data).toHaveLength(2);
+      expect(data.data[0]._children).toHaveLength(1);
+      expect(data.data[0]._children[0].title).toBe("Small");
+      expect(data.data[1]._children).toHaveLength(0);
+    });
+
+    it("handles null url (no results)", async () => {
+      mockClient.query.mockResolvedValue({
+        data: { node: { id: "op1", status: "COMPLETED", objectCount: "0", url: null } },
+      });
+      const result = await findTool("get_bulk_operation_results").handler(mockClient, { id: "op1" });
+      const data = JSON.parse(result.content[0].text);
+      expect(data.status).toBe("COMPLETED");
+      expect(data.message).toContain("no results");
+    });
+
+    it("handles fetch failure", async () => {
+      mockClient.query.mockResolvedValue({
+        data: {
+          node: { id: "op1", status: "COMPLETED", objectCount: "10", url: "https://storage.shopify.com/file.jsonl" },
+        },
+      });
+      const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await findTool("get_bulk_operation_results").handler(mockClient, { id: "op1" });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain("Network error");
+    });
+  });
+
   describe("bulk_update_products", () => {
     it("calls staged upload and then bulk mutation", async () => {
       const mockFetch = vi.fn()

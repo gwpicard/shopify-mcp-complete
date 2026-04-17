@@ -15,8 +15,8 @@ import "../../src/tools/store/index.js";
 describe("Tool Registry Integration", () => {
   const tools = getAllTools();
 
-  it("registers exactly 32 tools", () => {
-    expect(tools).toHaveLength(32);
+  it("registers exactly 33 tools", () => {
+    expect(tools).toHaveLength(33);
   });
 
   it("has no duplicate tool names", () => {
@@ -75,6 +75,7 @@ describe("Tool Registry Integration", () => {
       "delete_discount",
       "delete_metafields",
       "delete_product",
+      "get_bulk_operation_results",
       "get_bulk_operation_status",
       "get_collection",
       "get_collections",
@@ -109,6 +110,7 @@ describe("Tool Registry Integration", () => {
       "count_products",
       "bulk_export_products",
       "get_bulk_operation_status",
+      "get_bulk_operation_results",
       "get_metafields",
       "get_metafield_definitions",
       "get_collections",

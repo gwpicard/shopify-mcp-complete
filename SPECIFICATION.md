@@ -19,7 +19,7 @@
 
 ## 1. Overview
 
-The Shopify MCP server is a Model Context Protocol server that connects Claude Desktop to a Shopify store via the Shopify Admin GraphQL API. It exposes 32 tools across 9 domains covering products, orders, customers, inventory, collections, discounts, and store configuration.
+The Shopify MCP server is a Model Context Protocol server that connects Claude Desktop to a Shopify store via the Shopify Admin GraphQL API. It exposes 33 tools across 9 domains covering products, orders, customers, inventory, collections, discounts, and store configuration.
 
 ### Key Workflow
 
@@ -36,7 +36,7 @@ The server also supports order review, customer lookup, inventory management, di
 | Domain | Tools | Read | Write |
 |---|---|---|---|
 | Products | 9 | 3 | 6 |
-| Bulk Operations | 3 | 2 | 1 |
+| Bulk Operations | 4 | 3 | 1 |
 | Metafields | 4 | 2 | 2 |
 | Collections | 2 | 2 | 0 |
 | Inventory | 4 | 2 | 2 |
@@ -44,7 +44,7 @@ The server also supports order review, customer lookup, inventory management, di
 | Customers | 2 | 2 | 0 |
 | Discounts | 4 | 1 | 3 |
 | Store & Utility | 2 | 1 | 1 |
-| **Total** | **32** | **17** | **15** |
+| **Total** | **33** | **18** | **15** |
 
 ---
 
@@ -307,7 +307,7 @@ The server also supports order review, customer lookup, inventory management, di
 
 ---
 
-### 3.2 Bulk Operations (3 tools)
+### 3.2 Bulk Operations (4 tools)
 
 #### `bulk_export_products`
 
@@ -353,6 +353,32 @@ The server also supports order review, customer lookup, inventory management, di
 - Status values: `CREATED`, `RUNNING`, `COMPLETED`, `FAILED`, `CANCELING`, `CANCELED`, `EXPIRED`.
 - When status is `COMPLETED`, the `url` field contains a JSONL file for download.
 - Recommended polling interval: 3-5 seconds for small stores, 10-30 seconds for large catalogs.
+
+---
+
+#### `get_bulk_operation_results`
+
+| Property | Value |
+|---|---|
+| **Domain** | Bulk Operations |
+| **R/W** | Read |
+| **Annotations** | `readOnlyHint: true`, `destructiveHint: false`, `idempotentHint: true`, `openWorldHint: true` |
+| **Description** | Download and parse the results of a completed bulk operation. Fetches the JSONL file from the bulk operation's URL and returns structured data inline, reconstructing parent-child relationships using Shopify's `__parentId` field. Use this instead of manually downloading the URL, especially in sandboxed environments where external URL access is restricted. |
+
+**Parameters:**
+
+| Name | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | Yes | Bulk operation GID (e.g., `gid://shopify/BulkOperation/123`) |
+| `limit` | number | No | Max number of root objects to return (for large catalogs) |
+
+**Key implementation details:**
+- Calls `GET_BULK_OPERATION_QUERY` to check operation status and get the download URL.
+- If the operation is not `COMPLETED`, returns the current status so the client knows to poll again.
+- If `COMPLETED` with a `url`, fetches the JSONL file via `fetch()`, parses each line as JSON, and reconstructs parent-child relationships.
+- Parent-child reconstruction: lines without `__parentId` are root objects; lines with `__parentId` are grouped into their parent's `_children` array.
+- Optional `limit` parameter caps the number of root objects returned (useful for large catalogs to avoid exceeding context windows).
+- `openWorldHint: true` because the tool fetches an external Google Cloud Storage URL.
 
 ---
 
@@ -1100,6 +1126,10 @@ This server is scoped to the product audit workflow and adjacent merchant operat
 ---
 
 ## 6. Changelog
+
+### v1.1.0 (2026-04-17)
+
+- Added `get_bulk_operation_results` tool to Bulk Operations domain. Downloads and parses JSONL results from completed bulk operations inline, reconstructing parent-child relationships. Enables sandboxed MCP clients that cannot fetch external URLs to access bulk export data directly.
 
 ### v1.0.0 (2026-04-16)
 
