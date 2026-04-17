@@ -34,10 +34,11 @@ export const GET_PRODUCT_QUERY = `
         edges {
           node {
             id title sku barcode price compareAtPrice
-            weight weightUnit inventoryQuantity
+            inventoryQuantity
             selectedOptions { name value }
             inventoryItem {
               unitCost { amount currencyCode }
+              measurement { weight { value unit } }
             }
           }
         }

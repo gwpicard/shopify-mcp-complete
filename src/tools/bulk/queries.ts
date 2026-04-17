@@ -1,41 +1,44 @@
 export const PRODUCTS_CORE_VARIANTS_QUERY = `
   {
     products {
-      id
-      title
-      handle
-      descriptionHtml
-      vendor
-      productType
-      status
-      tags
-      createdAt
-      updatedAt
-      publishedAt
-      onlineStoreUrl
-      totalInventory
-      seo { title description }
-      category { name }
-      priceRangeV2 {
-        minVariantPrice { amount currencyCode }
-        maxVariantPrice { amount currencyCode }
-      }
-      options { id name values }
-      variants {
-        edges {
-          node {
-            id
-            title
-            sku
-            barcode
-            price
-            compareAtPrice
-            weight
-            weightUnit
-            inventoryQuantity
-            selectedOptions { name value }
-            inventoryItem {
-              unitCost { amount currencyCode }
+      edges {
+        node {
+          id
+          title
+          handle
+          descriptionHtml
+          vendor
+          productType
+          status
+          tags
+          createdAt
+          updatedAt
+          publishedAt
+          onlineStoreUrl
+          totalInventory
+          seo { title description }
+          category { name }
+          priceRangeV2 {
+            minVariantPrice { amount currencyCode }
+            maxVariantPrice { amount currencyCode }
+          }
+          options { id name values }
+          variants {
+            edges {
+              node {
+                id
+                title
+                sku
+                barcode
+                price
+                compareAtPrice
+                inventoryQuantity
+                selectedOptions { name value }
+                inventoryItem {
+                  unitCost { amount currencyCode }
+                  measurement { weight { value unit } }
+                }
+              }
             }
           }
         }
@@ -47,26 +50,30 @@ export const PRODUCTS_CORE_VARIANTS_QUERY = `
 export const PRODUCTS_MEDIA_META_COLLECTIONS_QUERY = `
   {
     products {
-      id
-      media {
-        edges {
-          node {
-            mediaContentType
-            ... on MediaImage {
-              id
-              image { url altText width height }
+      edges {
+        node {
+          id
+          media {
+            edges {
+              node {
+                mediaContentType
+                ... on MediaImage {
+                  id
+                  image { url altText width height }
+                }
+              }
             }
           }
-        }
-      }
-      metafields {
-        edges {
-          node { id namespace key value type }
-        }
-      }
-      collections {
-        edges {
-          node { id title handle }
+          metafields {
+            edges {
+              node { id namespace key value type }
+            }
+          }
+          collections {
+            edges {
+              node { id title handle }
+            }
+          }
         }
       }
     }

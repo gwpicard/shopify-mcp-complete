@@ -878,54 +878,61 @@ Bulk exports use Shopify's `bulkOperationRunQuery` API, which processes the enti
 ```graphql
 {
   products {
-    id
-    title
-    handle
-    descriptionHtml
-    status
-    vendor
-    productType
-    tags
-    createdAt
-    updatedAt
-    publishedAt
-    onlineStoreUrl
-    totalInventory
-    tracksInventory
-    hasOnlyDefaultVariant
-    seo { title description }
-    priceRangeV2 {
-      minVariantPrice { amount currencyCode }
-      maxVariantPrice { amount currencyCode }
-    }
-    compareAtPriceRange {
-      minVariantCompareAtPrice { amount currencyCode }
-      maxVariantCompareAtPrice { amount currencyCode }
-    }
-    category { id name fullName }
-    templateSuffix
-    options {
-      id name position values
-    }
-    variants {
-      id
-      title
-      sku
-      barcode
-      price
-      compareAtPrice
-      position
-      inventoryQuantity
-      weight
-      weightUnit
-      requiresShipping
-      taxable
-      taxCode
-      selectedOptions { name value }
-      inventoryItem {
+    edges {
+      node {
         id
-        unitCost { amount currencyCode }
-        tracked
+        title
+        handle
+        descriptionHtml
+        status
+        vendor
+        productType
+        tags
+        createdAt
+        updatedAt
+        publishedAt
+        onlineStoreUrl
+        totalInventory
+        tracksInventory
+        hasOnlyDefaultVariant
+        seo { title description }
+        priceRangeV2 {
+          minVariantPrice { amount currencyCode }
+          maxVariantPrice { amount currencyCode }
+        }
+        compareAtPriceRange {
+          minVariantCompareAtPrice { amount currencyCode }
+          maxVariantCompareAtPrice { amount currencyCode }
+        }
+        category { id name fullName }
+        templateSuffix
+        options {
+          id name position values
+        }
+        variants {
+          edges {
+            node {
+              id
+              title
+              sku
+              barcode
+              price
+              compareAtPrice
+              position
+              inventoryQuantity
+              requiresShipping
+              taxable
+              taxCode
+              selectedOptions { name value }
+              inventoryItem {
+                id
+                unitCost { amount currencyCode }
+                tracked
+                measurement { weight { value unit } }
+              }
+            }
+          }
+        }
       }
     }
   }
@@ -970,7 +977,7 @@ Bulk exports use Shopify's `bulkOperationRunQuery` API, which processes the enti
 | `compareAtPrice` | Yes | Sale pricing consistency |
 | `position` | Yes | Sort order |
 | `inventoryQuantity` | Yes | Stock level |
-| `weight` / `weightUnit` | Yes | Shipping weight audit |
+| `inventoryItem.measurement.weight` | Yes | Shipping weight audit (value + unit) |
 | `requiresShipping` | Yes | Fulfillment configuration |
 | `taxable` / `taxCode` | Yes | Tax configuration |
 | `selectedOptions` | Yes | Option mapping |
