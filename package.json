@@ -1,0 +1,31 @@
+{
+  "name": "shopify-mcp-server",
+  "version": "1.0.0",
+  "description": "Comprehensive Shopify MCP server for Claude Desktop — full product audit and management",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "shopify-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit"
+  },
+  "keywords": ["shopify", "mcp", "model-context-protocol", "claude-desktop"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^3.0.0"
+  }
+}
