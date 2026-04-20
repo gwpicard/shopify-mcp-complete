@@ -1,11 +1,11 @@
 {
-  "name": "shopify-mcp-server",
+  "name": "shopify-mcp-complete",
   "version": "1.0.0",
   "description": "Comprehensive Shopify MCP server for Claude Desktop — full product audit and management",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "shopify-mcp-server": "dist/index.js"
+    "shopify-mcp-complete": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",

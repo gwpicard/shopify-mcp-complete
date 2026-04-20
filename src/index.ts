@@ -53,7 +53,7 @@ async function main() {
   const client = new ShopifyClient(config);
 
   const server = new Server(
-    { name: "shopify-mcp-server", version: "1.0.0" },
+    { name: "shopify-mcp-complete", version: "1.0.0" },
     {
       capabilities: { tools: {} },
       instructions: SERVER_INSTRUCTIONS,

@@ -19,7 +19,7 @@ Most Shopify MCP servers expose 70+ tools. That hurts tool-selection accuracy an
 ### 1. Install
 
 ```bash
-npm install -g shopify-mcp-server
+npm install -g shopify-mcp-complete
 ```
 
 ### 2. Add to Claude Desktop
@@ -31,7 +31,7 @@ Add to `claude_desktop_config.json`:
   "mcpServers": {
     "shopify": {
       "command": "npx",
-      "args": ["shopify-mcp-server"],
+      "args": ["shopify-mcp-complete"],
       "env": {
         "SHOPIFY_STORE_DOMAIN": "your-store.myshopify.com",
         "SHOPIFY_ACCESS_TOKEN": "shpat_xxxxx"
