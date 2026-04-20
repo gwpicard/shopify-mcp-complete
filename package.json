@@ -1,6 +1,6 @@
 {
   "name": "shopify-mcp-complete",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Comprehensive Shopify MCP server for Claude Desktop — full product audit and management",
   "type": "module",
   "main": "dist/index.js",
@@ -16,8 +16,15 @@
     "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
-  "files": ["dist"],
-  "keywords": ["shopify", "mcp", "model-context-protocol", "claude-desktop"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "shopify",
+    "mcp",
+    "model-context-protocol",
+    "claude-desktop"
+  ],
   "license": "MIT",
   "author": "Guillaume Picard",
   "repository": {
