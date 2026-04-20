@@ -4,19 +4,16 @@
 [![Publish](https://github.com/gwpicard/shopify-mcp-complete/actions/workflows/publish.yml/badge.svg)](https://github.com/gwpicard/shopify-mcp-complete/actions/workflows/publish.yml)
 [![License: MIT](https://img.shields.io/npm/l/shopify-mcp-complete.svg)](LICENSE)
 
-A Shopify MCP server for Claude Desktop. 33 tools across 9 domains, built around a pull → audit → update workflow.
+A Shopify MCP server for Claude Desktop. 33 tools covering products, bulk operations, metafields, collections, inventory, orders, customers, discounts, and the store itself.
 
-### Design notes
+## Notes
 
-Most Shopify MCP servers expose 70+ tools. That hurts tool-selection accuracy and eats context. This one keeps the surface area smaller and opinionated.
-
-- **33 tools total.** A smaller menu makes tool selection more consistent and cheaper in tokens.
-- **Atomic `productSet` mutations.** One code path covers create and update, matching Shopify's recommended pattern, rather than separate `productCreate` / `productUpdate` paths.
-- **Cost-aware rate limiting.** Tracks `extensions.cost.throttleStatus` and sleeps before the budget runs out, so requests don't trip a 429.
-- **Tool annotations on every tool.** Claude Desktop auto-approves read-only calls without user confirmation.
-- **One runtime dependency:** `@modelcontextprotocol/sdk`.
-- **Two-query bulk export.** Splits fields across two queries to stay under Shopify's 5-connection-per-operation limit while still pulling full product data.
-- **Token auth.** Set an `shpat_` access token. An interactive setup script handles the one-time OAuth exchange.
+- Uses `productSet` for both creating and updating products, so the same tool covers both.
+- Rate limiting reads `extensions.cost.throttleStatus` on each response and backs off before hitting a 429.
+- Bulk export splits across two sequential queries to stay under Shopify's 5-connection-per-operation limit.
+- Read-only tools are annotated so Claude Desktop can auto-approve them.
+- Authentication is a Shopify `shpat_` access token. `scripts/get-token.sh` runs the one-time OAuth exchange.
+- Runtime dependency: `@modelcontextprotocol/sdk`.
 
 ## Quick Start
 
@@ -241,14 +238,10 @@ npm run build    # Build for production
 
 ## Architecture
 
-- **TypeScript** ESM with strict mode, ES2022 target
-- **Shopify Admin GraphQL API** (version 2026-04)
-- **Single runtime dependency**: `@modelcontextprotocol/sdk`
-- **Native `fetch()`** (Node 18+)
-- **Cost-aware rate limiting** via `extensions.cost.throttleStatus`
-- **Tool annotations** on every tool for Claude Desktop auto-approval
-- **Domain module pattern**: self-registering via side-effect imports
+- TypeScript ESM, ES2022 target, strict mode.
+- Shopify Admin GraphQL API, version 2026-04.
+- Node 18+ (uses native `fetch`).
+- Tools self-register via side-effect imports from domain modules.
 
 See [SPECIFICATION.md](SPECIFICATION.md) for the full technical spec.
-See [RELEASE.md](RELEASE.md) for how releases are cut.
 See [RELEASE.md](RELEASE.md) for how releases are cut.

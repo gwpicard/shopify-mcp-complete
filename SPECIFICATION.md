@@ -19,17 +19,9 @@
 
 ## 1. Overview
 
-The Shopify MCP server is a Model Context Protocol server that connects Claude Desktop to a Shopify store via the Shopify Admin GraphQL API. It exposes 33 tools across 9 domains covering products, orders, customers, inventory, collections, discounts, and store configuration.
+The Shopify MCP server is a Model Context Protocol server that connects Claude Desktop to a Shopify store via the Shopify Admin GraphQL API. It exposes 33 tools across 9 domains: products, bulk operations, metafields, collections, inventory, orders, customers, discounts, and store configuration.
 
-### Key Workflow
-
-The primary use case is a product audit loop:
-
-1. **Pull** product data (single-product detail, paginated lists, or bulk exports for thousands of products).
-2. **Audit** locally. The LLM examines SEO metadata, missing images, price anomalies, inventory gaps, tag consistency, and other quality signals.
-3. **Update** products back to Shopify: titles, descriptions, tags, metafields, variants, and media over the same connection.
-
-The server also supports order review, customer lookup, inventory management, discount administration, and store-level configuration queries.
+Products have the widest coverage (read, create, update, delete, bulk export, bulk update, media, variants, metafields). Orders and customers are read-only. Inventory, discounts, collections, and store-level queries fall between the two.
 
 ### Tool Count Summary
 
@@ -58,7 +50,7 @@ The server also supports order review, customer lookup, inventory management, di
 | Runtime dependencies | 1: `@modelcontextprotocol/sdk` | Lean dependency tree. The SDK provides `Server`, `StdioServerTransport`, and the JSON-RPC message handling. Everything else is hand-written. |
 | Tool schemas | Raw JSON Schema objects (no Zod) | Avoids a second runtime dependency. JSON Schema objects are passed directly to the MCP SDK and are already the wire format the protocol requires. |
 | Product mutations | `productSet` (not `productCreate`/`productUpdate`) | `productSet` is Shopify's atomic create-or-update operation. It accepts a full product payload with `synchronous: true` and returns the complete product, so there's no separate create and update code path. Uses set semantics for list fields (tags, metafields, variants). |
-| Bulk export | 2 sequential queries | Shopify limits each `bulkOperationRunQuery` to 5 connections. Splitting into two queries (core+variants and media+metafields+collections) stays under the limit while still pulling all the fields the audit workflow needs. |
+| Bulk export | 2 sequential queries | Shopify limits each `bulkOperationRunQuery` to 5 connections. Splitting into two queries (core+variants and media+metafields+collections) stays under the limit while pulling the full product payload. |
 | Rate limiting | Cost-aware via `extensions.cost.throttleStatus` | Every GraphQL response includes `throttleStatus` with `currentlyAvailable`, `maximumAvailable`, and `restoreRate`. The client tracks these values and sleeps before sending a request that would exceed the budget, so 429 errors don't happen in the first place. |
 | Auth | Token-only (`SHOPIFY_ACCESS_TOKEN`) + setup script | The server requires a single `SHOPIFY_ACCESS_TOKEN` environment variable containing a permanent `shpat_` token. A standalone `scripts/get-token.sh` bash script handles the one-time OAuth authorization code exchange interactively (prompts for store domain, client ID, client secret, and scopes). The server resolves auth at startup and uses a single `X-Shopify-Access-Token` header thereafter. |
 | Transport | stdio | Required for Claude Desktop integration. The server reads JSON-RPC messages from stdin and writes responses to stdout. Logging goes to stderr. |
@@ -1096,7 +1088,7 @@ The following fields are deliberately excluded from bulk export to reduce payloa
 
 ## 5. What's Excluded (and Why)
 
-This server is scoped to the product audit workflow and adjacent merchant operations. The following Shopify API areas are intentionally omitted.
+The following Shopify API areas are intentionally omitted.
 
 ### API Domains Not Included
 
