@@ -1,5 +1,9 @@
 # Shopify MCP Server
 
+[![npm version](https://img.shields.io/npm/v/shopify-mcp-complete.svg)](https://www.npmjs.com/package/shopify-mcp-complete)
+[![Publish](https://github.com/gwpicard/shopify-mcp-complete/actions/workflows/publish.yml/badge.svg)](https://github.com/gwpicard/shopify-mcp-complete/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/npm/l/shopify-mcp-complete.svg)](LICENSE)
+
 A Shopify MCP server for Claude Desktop. 33 tools across 9 domains, built around a pull → audit → update workflow.
 
 ### Design notes
@@ -246,3 +250,5 @@ npm run build    # Build for production
 - **Domain module pattern**: self-registering via side-effect imports
 
 See [SPECIFICATION.md](SPECIFICATION.md) for the full technical spec.
+See [RELEASE.md](RELEASE.md) for how releases are cut.
+See [RELEASE.md](RELEASE.md) for how releases are cut.
