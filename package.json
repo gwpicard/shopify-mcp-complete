@@ -1,6 +1,6 @@
 {
   "name": "shopify-mcp-complete",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Shopify MCP server for Claude Desktop. 33 tools covering products, bulk export, metafields, inventory, orders, customers, discounts, and store config.",
   "type": "module",
   "main": "dist/index.js",
