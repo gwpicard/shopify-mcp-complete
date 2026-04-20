@@ -1,9 +1,11 @@
+import { writeFile, mkdir } from "node:fs/promises";
+import { dirname } from "node:path";
 import { registerDomain } from "../index.js";
 import type { ToolDefinition, DomainModule } from "../index.js";
 import {
   BULK_EXPORT_QUERY_1,
-  PRODUCTS_CORE_VARIANTS_QUERY,
-  PRODUCTS_MEDIA_META_COLLECTIONS_QUERY,
+  productsCoreVariantsQuery,
+  productsMediaMetaCollectionsQuery,
   GET_BULK_OPERATION_QUERY,
   STAGED_UPLOADS_CREATE_MUTATION,
   BULK_MUTATION_RUN,
@@ -16,14 +18,45 @@ import {
   formatUserErrors,
 } from "../../utils/errors.js";
 
+function pickFields(obj: any, paths: string[]): any {
+  const out: any = {};
+  for (const path of paths) {
+    const parts = path.split(".");
+    let src = obj;
+    let dst = out;
+    for (let i = 0; i < parts.length; i++) {
+      const key = parts[i];
+      if (src == null || typeof src !== "object") {
+        src = undefined;
+        break;
+      }
+      if (i === parts.length - 1) {
+        if (key in src) dst[key] = src[key];
+      } else {
+        if (!(key in src)) break;
+        if (dst[key] == null || typeof dst[key] !== "object") dst[key] = {};
+        src = src[key];
+        dst = dst[key];
+      }
+    }
+  }
+  return out;
+}
+
 const tools: ToolDefinition[] = [
   {
     name: "bulk_export_products",
     description:
-      "Start two sequential bulk export operations for all products. The first exports core product data and variants, the second exports media, metafields, and collections. Returns both bulk operation IDs for polling.",
+      "Start two sequential bulk export operations for all products. The first exports core product data and variants, the second exports media, metafields, and collections. Accepts an optional Shopify query filter (same syntax as get_products, e.g. `status:ACTIVE`) to scope the export. Returns both bulk operation IDs for polling.",
     inputSchema: {
       type: "object",
-      properties: {},
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Optional Shopify query filter applied at the source (e.g. `status:ACTIVE`, `updated_at:>=2024-01-01`). When omitted, exports all products.",
+        },
+      },
     },
     annotations: {
       readOnlyHint: true,
@@ -31,11 +64,13 @@ const tools: ToolDefinition[] = [
       idempotentHint: false,
       openWorldHint: true,
     },
-    handler: async (client) => {
+    handler: async (client, args) => {
+      const filter = args?.query as string | undefined;
+
       // First bulk operation: core product data + variants
       const result1 = await client.query<{ bulkOperationRunQuery: any }>(
         BULK_EXPORT_QUERY_1,
-        { query: PRODUCTS_CORE_VARIANTS_QUERY }
+        { query: productsCoreVariantsQuery(filter) }
       );
       const error1 = extractGraphQLErrors(result1);
       if (error1) return formatErrorResponse(error1);
@@ -50,7 +85,7 @@ const tools: ToolDefinition[] = [
       // Second bulk operation: media + metafields + collections
       const result2 = await client.query<{ bulkOperationRunQuery: any }>(
         BULK_EXPORT_QUERY_1,
-        { query: PRODUCTS_MEDIA_META_COLLECTIONS_QUERY }
+        { query: productsMediaMetaCollectionsQuery(filter) }
       );
       const error2 = extractGraphQLErrors(result2);
       if (error2) return formatErrorResponse(error2);
@@ -105,7 +140,7 @@ const tools: ToolDefinition[] = [
   {
     name: "get_bulk_operation_results",
     description:
-      "Download and parse the results of a completed bulk operation. Fetches the JSONL file from the bulk operation's URL and returns structured data inline, reconstructing parent-child relationships. Use this instead of manually downloading the URL, especially in sandboxed environments.",
+      "Download and parse the results of a completed bulk operation. Fetches the JSONL file from the bulk operation's URL and returns structured data, reconstructing parent-child relationships. Supports pagination (`offset`, `limit`), dotted-path field projection (`fields`), and writing to a local file (`output_file`) to keep large payloads out of the context window. Use this instead of manually downloading the URL, especially in sandboxed environments.",
     inputSchema: {
       type: "object",
       properties: {
@@ -114,10 +149,26 @@ const tools: ToolDefinition[] = [
           description:
             "Shopify bulk operation GID (e.g. gid://shopify/BulkOperation/123)",
         },
+        offset: {
+          type: "number",
+          description:
+            "Skip this many root objects before returning (default 0).",
+        },
         limit: {
           type: "number",
           description:
-            "Max number of root objects to return (optional, for large catalogs)",
+            "Return at most this many root objects (after offset).",
+        },
+        fields: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Dotted field paths to keep on each root object (e.g. [\"id\", \"title\", \"seo.title\"]). Applied after parent-child reconstruction. When omitted, all fields are kept.",
+        },
+        output_file: {
+          type: "string",
+          description:
+            "If set, writes the parsed/projected array as JSON to this local path and omits `data` from the response. Parent directories are created if needed.",
         },
       },
       required: ["id"],
@@ -191,14 +242,47 @@ const tools: ToolDefinition[] = [
         }
       }
 
+      const offset = Math.max(0, (args.offset as number | undefined) ?? 0);
       const limit = args.limit as number | undefined;
-      const data = limit ? roots.slice(0, limit) : roots;
+      const end = limit != null ? offset + limit : roots.length;
+      let slice = roots.slice(offset, end);
+
+      const fields = args.fields as string[] | undefined;
+      if (fields && fields.length > 0) {
+        slice = slice.map((r) => pickFields(r, fields));
+      }
+
+      const outputFile = args.output_file as string | undefined;
+      if (outputFile) {
+        try {
+          await mkdir(dirname(outputFile), { recursive: true });
+          const json = JSON.stringify(slice);
+          await writeFile(outputFile, json, "utf8");
+          return formatSuccess({
+            status: "COMPLETED",
+            objectCount: node.objectCount,
+            rootObjectCount: roots.length,
+            offset,
+            limit: limit ?? null,
+            returnedCount: slice.length,
+            outputFile,
+            byteSize: Buffer.byteLength(json, "utf8"),
+          });
+        } catch (err: any) {
+          return formatErrorResponse(
+            `Failed to write output file: ${err.message}`
+          );
+        }
+      }
 
       return formatSuccess({
         status: "COMPLETED",
         objectCount: node.objectCount,
         rootObjectCount: roots.length,
-        data,
+        offset,
+        limit: limit ?? null,
+        returnedCount: slice.length,
+        data: slice,
       });
     },
   },

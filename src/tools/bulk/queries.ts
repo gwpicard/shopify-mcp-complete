@@ -1,84 +1,94 @@
-export const PRODUCTS_CORE_VARIANTS_QUERY = `
-  {
-    products {
-      edges {
-        node {
-          id
-          title
-          handle
-          descriptionHtml
-          vendor
-          productType
-          status
-          tags
-          createdAt
-          updatedAt
-          publishedAt
-          onlineStoreUrl
-          totalInventory
-          seo { title description }
-          category { name }
-          priceRangeV2 {
-            minVariantPrice { amount currencyCode }
-            maxVariantPrice { amount currencyCode }
-          }
-          options { id name values }
-          variants {
-            edges {
-              node {
-                id
-                title
-                sku
-                barcode
-                price
-                compareAtPrice
-                inventoryQuantity
-                selectedOptions { name value }
-                inventoryItem {
-                  unitCost { amount currencyCode }
-                  measurement { weight { value unit } }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
+function productsArgs(filter?: string): string {
+  if (!filter) return "";
+  const escaped = filter.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `(query: "${escaped}")`;
+}
 
-export const PRODUCTS_MEDIA_META_COLLECTIONS_QUERY = `
-  {
-    products {
-      edges {
-        node {
-          id
-          media {
-            edges {
-              node {
-                mediaContentType
-                ... on MediaImage {
+export function productsCoreVariantsQuery(filter?: string): string {
+  return `
+    {
+      products${productsArgs(filter)} {
+        edges {
+          node {
+            id
+            title
+            handle
+            descriptionHtml
+            vendor
+            productType
+            status
+            tags
+            createdAt
+            updatedAt
+            publishedAt
+            onlineStoreUrl
+            totalInventory
+            seo { title description }
+            category { name }
+            priceRangeV2 {
+              minVariantPrice { amount currencyCode }
+              maxVariantPrice { amount currencyCode }
+            }
+            options { id name values }
+            variants {
+              edges {
+                node {
                   id
-                  image { url altText width height }
+                  title
+                  sku
+                  barcode
+                  price
+                  compareAtPrice
+                  inventoryQuantity
+                  selectedOptions { name value }
+                  inventoryItem {
+                    unitCost { amount currencyCode }
+                    measurement { weight { value unit } }
+                  }
                 }
               }
-            }
-          }
-          metafields {
-            edges {
-              node { id namespace key value type }
-            }
-          }
-          collections {
-            edges {
-              node { id title handle }
             }
           }
         }
       }
     }
-  }
-`;
+  `;
+}
+
+export function productsMediaMetaCollectionsQuery(filter?: string): string {
+  return `
+    {
+      products${productsArgs(filter)} {
+        edges {
+          node {
+            id
+            media {
+              edges {
+                node {
+                  mediaContentType
+                  ... on MediaImage {
+                    id
+                    image { url altText width height }
+                  }
+                }
+              }
+            }
+            metafields {
+              edges {
+                node { id namespace key value type }
+              }
+            }
+            collections {
+              edges {
+                node { id title handle }
+              }
+            }
+          }
+        }
+      }
+    }
+  `;
+}
 
 export const BULK_EXPORT_QUERY_1 = `
   mutation bulkOperationRunQuery($query: String!) {

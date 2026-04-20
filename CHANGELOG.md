@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-20
+
+### Added
+- `query` parameter on `bulk_export_products` for source-side filtering (Shopify query syntax, e.g. `status:ACTIVE`).
+- `offset` parameter on `get_bulk_operation_results` for paging through large result sets.
+- `fields` parameter on `get_bulk_operation_results` for dotted-path projection (e.g. `["id", "title", "seo.title"]`).
+- `output_file` parameter on `get_bulk_operation_results` that writes results to a local file and omits `data` from the tool response, so large catalogues stay out of the LLM context window.
+
+### Changed
+- Rewrote the npm package description to a factual tool-coverage summary.
+
 ## [1.0.2] - 2026-04-20
 
 ### Changed

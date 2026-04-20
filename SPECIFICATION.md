@@ -314,7 +314,7 @@ Products have the widest coverage (read, create, update, delete, bulk export, bu
 
 | Name | Type | Required | Description |
 |---|---|---|---|
-| `query` | string | No | Shopify filter query to limit which products are exported |
+| `query` | string | No | Shopify query string (same syntax as `get_products`, e.g. `status:ACTIVE`, `updated_at:>=2024-01-01`). When set, inlined as the `products(query: "…")` argument in both bulk GraphQL queries, so Shopify only emits matching products into the JSONL. |
 
 **Key implementation details:**
 - Fires two sequential bulk queries (see [Section 4](#4-bulk-export-field-specification) for field details).
@@ -322,6 +322,7 @@ Products have the widest coverage (read, create, update, delete, bulk export, bu
 - Query 2: Media + Metafields + Collections (4 connections, within the 5-connection limit).
 - Returns both operation IDs so the caller can poll each independently.
 - `openWorldHint: true` because the JSONL result is downloaded from a Shopify-generated URL.
+- Bulk GraphQL queries cannot use GraphQL variables, so the `query` filter is interpolated into the query string server-side. Quotes and backslashes are escaped before interpolation.
 
 ---
 
@@ -362,14 +363,34 @@ Products have the widest coverage (read, create, update, delete, bulk export, bu
 | Name | Type | Required | Description |
 |---|---|---|---|
 | `id` | string | Yes | Bulk operation GID (e.g., `gid://shopify/BulkOperation/123`) |
-| `limit` | number | No | Max number of root objects to return (for large catalogs) |
+| `offset` | number | No | Skip this many root objects before returning (default 0). |
+| `limit` | number | No | Return at most this many root objects after `offset`. |
+| `fields` | string[] | No | Dotted field paths to keep on each root object (e.g. `["id", "title", "seo.title"]`). Applied after parent-child reconstruction. When omitted, all fields are kept. |
+| `output_file` | string | No | Local filesystem path. When set, the parsed/projected/paged array is written as JSON to this path and `data` is omitted from the response. Parent directories are created if needed. |
+
+**Response shape:**
+
+```json
+{
+  "status": "COMPLETED",
+  "objectCount": "<from Shopify>",
+  "rootObjectCount": 700,
+  "offset": 0,
+  "limit": 50,
+  "returnedCount": 50,
+  "data": [ ... ]           // present unless output_file is set
+  // "outputFile": "/tmp/x.json", "byteSize": 12345  // present when output_file is set
+}
+```
 
 **Key implementation details:**
 - Calls `GET_BULK_OPERATION_QUERY` to check operation status and get the download URL.
 - If the operation is not `COMPLETED`, returns the current status so the client knows to poll again.
 - If `COMPLETED` with a `url`, fetches the JSONL file via `fetch()`, parses each line as JSON, and reconstructs parent-child relationships.
 - Parent-child reconstruction: lines without `__parentId` are root objects; lines with `__parentId` are grouped into their parent's `_children` array.
-- Optional `limit` parameter caps the number of root objects returned (useful for large catalogs to avoid exceeding context windows).
+- Slicing: `roots.slice(offset, offset + limit)` after reconstruction. Callers page through large result sets by incrementing `offset`.
+- Projection: a small dotted-path picker rebuilds each object with only the requested fields. Nested paths like `seo.title` create the nested object structure on the output.
+- `output_file` mode keeps large payloads out of the LLM context window entirely; downstream scripts read from disk.
 - `openWorldHint: true` because the tool fetches an external Google Cloud Storage URL.
 
 ---

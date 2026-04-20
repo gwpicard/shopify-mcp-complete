@@ -138,9 +138,9 @@ You need an app on the [Shopify Dev Dashboard](https://dev.shopify.com/dashboard
 
 | Tool | R/W | Description |
 |------|-----|-------------|
-| `bulk_export_products` | R | Kick off 2 sequential bulk queries for full product data |
+| `bulk_export_products` | R | Kick off 2 sequential bulk queries for full product data, with an optional Shopify `query` filter applied at source |
 | `get_bulk_operation_status` | R | Poll operation status and get download URL |
-| `get_bulk_operation_results` | R | Download and parse completed bulk operation JSONL results inline |
+| `get_bulk_operation_results` | R | Download and parse completed bulk operation JSONL. Supports `offset`/`limit` paging, `fields` projection (dotted paths), and `output_file` to write results to disk instead of returning inline |
 | `bulk_update_products` | W | JSONL upload + bulk `productSet` mutation |
 
 ### Metafields (4)
